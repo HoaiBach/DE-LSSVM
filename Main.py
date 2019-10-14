@@ -17,6 +17,12 @@ if __name__ == '__main__':
     to_print += 'Population size: %d \n' % pop_size
     run = int(sys.argv[2])
 
+    Paras.alpha = float(sys.argv[3])/1000.0
+    Paras.beta = float(sys.argv[4])/1000.0
+
+    to_print += 'Alpha: %f \n' % Paras.alpha
+    to_print += 'Beta: %f \n' % Paras.beta
+
     seed = 1617*run
     np.random.seed(seed)
 
@@ -37,13 +43,16 @@ if __name__ == '__main__':
     # ensure that y label start from 0, not 1
     num_class, count = np.unique(y, return_counts=True)
     n_classes = np.unique(y).shape[0]
-    min_class = np.min(count)
-    if np.max(y) >= len(num_class):
-        y = y-1
-    y = np.int8(y)
-    # convert to -1 and 1
     assert(n_classes == 2)
-    y[np.where(y == 0)] = -1
+    min_class = np.min(count)
+    unique_classes = np.unique(y)
+    y[y == unique_classes[0]] = -1
+    y[y == unique_classes[1]] = 1
+    # if np.max(y) >= len(num_class):
+    #     y = y-1
+    # # convert to -1 and 1
+    # y[np.where(y == 0)] = -1
+    y = np.int8(y)
 
     # ensure that the division is the same for all algorithms, in all runs
     n_splits = min(min_class, 5)
@@ -136,6 +145,6 @@ if __name__ == '__main__':
     to_print += 'Full SVM: %f \n' % np.mean(svm_accs_full)
     to_print += 'Select SVM: %f \n' % np.mean(svm_accs_sel)
     to_print += 'Ave nf: %f \n' % np.mean(nf)
-    f = open(str(run)+'.txt', 'w')
+    f = open(str(Paras.alpha)+'_'+str(Paras.beta)+'.txt', 'w')
     f.write(to_print)
     f.close()

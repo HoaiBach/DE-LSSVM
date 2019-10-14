@@ -91,12 +91,12 @@ class FS_LSSVM(Problem):
 
         return fitness
 
-    # def gradient_step(self, sol):
-    #     weight = sol[0:self.no_features]
-    #     b = sol[self.no_features:self.no_features+1]
-    #
-    #     output = np.dot(self.X_train, np.reshape(weight, (self.no_features, 1))) + b
-    #     output = np.ravel(output)
-    #     step = Paras.l_rate* Paras.alpha*(output*self.y_train-1)
-    #     weight = weight - step
+    def gradient_step(self, sol):
+        weight = sol[0:self.no_features]
+        b = sol[self.no_features:self.no_features+1]
+
+        output = np.dot(self.X_train, np.reshape(weight, (self.no_features, 1))) + b
+        output = np.ravel(output)
+        step = Paras.l_rate* Paras.alpha*(output*self.y_train-1)
+        weight = weight - step
 

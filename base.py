@@ -24,11 +24,11 @@ def jade_crossover(x_i, v, CR, minpos, maxpos):
     trial = np.copy(x_i)
     trial[mask] = v[mask]
     for idx, value in enumerate(trial):
-        if value > maxpos:
-            trial[idx] = (maxpos+x_i[idx])/2
+        if value > maxpos[idx]:
+            trial[idx] = (maxpos[idx]+x_i[idx])/2
             # trial[idx] = maxpos
-        if value < minpos:
-            trial[idx] = (minpos+x_i[idx])/2
+        if value < minpos[idx]:
+            trial[idx] = (minpos[idx]+x_i[idx])/2
             # trial[idx] = minpos
     return trial
 

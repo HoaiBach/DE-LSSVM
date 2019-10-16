@@ -6,13 +6,15 @@ import Paras
 
 
 class JADE:
-    def __init__(self, problem, popsize, dims, maxiters, c, p):
+    def __init__(self, problem, popsize, dims, maxiters, minpos, maxpos, c, p):
         self.problem = problem
         self.popsize = popsize
         self.dims = dims
         self.maxiters = maxiters
         self.c = c
         self.num_top = int(p*self.popsize)
+        self.minpos = minpos
+        self.maxpos = maxpos
         if self.num_top <= 0:
             self.num_top = 1
 
@@ -26,7 +28,7 @@ class JADE:
         self.best_fitness = self.fitness[self.best_idx]
 
     def initialize_pop(self):
-        return random_init(self.popsize, self.dims, Paras.minpos, Paras.maxpos)
+        return random_init(self.popsize, self.dims, self.minpos, self.maxpos)
 
     def evaluate(self):
         return [self.problem.fitness(ind) for ind in self.population]
@@ -74,8 +76,9 @@ class JADE:
                     x_r2 = np.array(archive[idx_r2-self.popsize])
 
                 mutant = jade_mutant(x_i=ind, x_b=x_top, x_r1=x_r1, x_r2=x_r2, F=f)
-                trial = jade_crossover(x_i=ind, v=mutant, CR=cr, minpos=Paras.minpos, maxpos=Paras.maxpos)
-                # self.problem.gradient_step(trial)
+                trial = jade_crossover(x_i=ind, v=mutant, CR=cr,
+                                       minpos=self.minpos, maxpos=self.maxpos)
+
                 trial_fit = self.problem.fitness(trial)
 
                 if not self.problem.is_better(self.fitness[idx], trial_fit):

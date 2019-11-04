@@ -19,19 +19,35 @@ class JADE:
             self.num_top = 1
 
         # init population
-        self.population = self.initialize_pop()
-        self.fitness = np.asarray(self.evaluate())
+        self.population = self.minpos + np.random.rand(popsize, dims) * (self.maxpos-self.minpos)
+
+        self.head_print = 'Min reg %f\n' % Paras.min_reg
+        self.head_print += 'Max reg %f\n' % Paras.max_reg
+        self.head_print += 'Min loss %f\n' % Paras.min_loss
+        self.head_print += 'Max loss %f\n' % Paras.max_loss
+        self.head_print += '---------------------------------------------\n'
+        self.head_print += 'Fitness, Sel_ratio, Error, No_features, Features\n'
+
+        # evaluate the initialized population
+        self.fitness = []
+        self.sel_ratio = []
+        self.error = []
+        for ind in self.population:
+            fit_ind, sel_ratio_ind, err_ind = self.problem.fitness(ind)
+            self.fitness.append(fit_ind)
+            self.sel_ratio.append(sel_ratio_ind)
+            self.error.append(err_ind)
+        self.fitness = np.array(self.fitness)
+        self.sel_ratio = np.array(self.sel_ratio)
+        self.error = np.array(self.error)
+
         if self.problem.minimized:
             self.best_idx = np.argmin(self.fitness)
         else:
             self.best_idx = np.argmax(self.fitness)
         self.best_fitness = self.fitness[self.best_idx]
-
-    def initialize_pop(self):
-        return random_init(self.popsize, self.dims, self.minpos, self.maxpos)
-
-    def evaluate(self):
-        return [self.problem.fitness(ind) for ind in self.population]
+        self.best_sel_ratio = self.sel_ratio[self.best_idx]
+        self.best_error = self.error[self.best_idx]
 
     def evolve(self):
         mean_cr = 0.5
@@ -39,7 +55,7 @@ class JADE:
         std = 0.1
         archive = []
 
-        to_print = ''
+        to_print = self.head_print
         for iter in range(self.maxiters):
             success_cr = []
             success_f = []
@@ -48,11 +64,13 @@ class JADE:
             crs[crs < 0.0] = 0.0
             fs = np.random.normal(mean_f, std, self.popsize)
             fs[fs > 1.0] = 1.0
-            fs[fs < 0.0] = 0.0
+            fs[fs < 0.0] = 0.
+            sort_idx = np.argsort(self.fitness)
+
             if self.problem.minimized:
-                top_indices = np.argsort(self.fitness)[:self.num_top]
+                top_indices = sort_idx[:self.num_top]
             else:
-                top_indices = np.argsort(self.fitness)[-self.num_top:]
+                top_indices = sort_idx[-self.num_top:]
 
             for idx, ind in enumerate(self.population):
                 cr = crs[idx]
@@ -79,18 +97,38 @@ class JADE:
                 trial = jade_crossover(x_i=ind, v=mutant, CR=cr,
                                        minpos=self.minpos, maxpos=self.maxpos)
 
-                trial_fit = self.problem.fitness(trial)
+                trial_fit, trial_reg, trial_loss = self.problem.fitness(trial)
 
                 if not self.problem.is_better(self.fitness[idx], trial_fit):
                     archive.append(np.copy(ind))
                     self.population[idx] = trial
                     self.fitness[idx] = trial_fit
+                    self.sel_ratio[idx] = trial_reg
+                    self.error[idx] = trial_loss
                     success_cr.append(cr)
                     success_f.append(f)
                     # check to update the best solution
                     if self.problem.is_better(self.fitness[idx], self.best_fitness):
                         self.best_fitness = self.fitness[idx]
                         self.best_idx = idx
+                        self.best_sel_ratio = self.sel_ratio[idx]
+                        self.best_error = self.error[idx]
+
+
+            # now perform local search on the best fitness
+            # new_best = self.problem.generate_candidate(self.population[np.random.randint(0, self.popsize)])
+            # new_fit = self.problem.fitness(new_best)[0]
+            # if self.problem.is_better(new_fit, self.best_fitness):
+            #     # if the new solution is better than the best
+            #     # replace the best
+            #     self.population[self.best_idx] = new_best
+            #     self.fitness[self.best_idx] = new_fit
+            #     self.best_fitness = new_fit
+            # else:
+            #     # otherwise, randomly replace a candidate solution
+            #     replace_idx = np.random.randint(0, self.popsize)
+            #     self.population[replace_idx] = new_best
+            #     self.fitness[replace_idx] = new_fit
 
             # Maintain the size of archive
             while len(archive) > self.popsize:
@@ -107,5 +145,14 @@ class JADE:
             else:
                 mean_f = (1-self.c)*mean_f + self.c*np.sum(np.asarray(success_f)**2)/np.sum(success_f)
 
-            to_print += 'Iteration %d: %f\n' % (iter, self.best_fitness)
+            feature_mask = self.population[self.best_idx]
+            assert len(feature_mask) == self.problem.no_features
+            feature_sel = np.where(feature_mask > Paras.threshold)[0]
+            str_sel = '['
+            for feature_idx in feature_sel:
+                str_sel += str(feature_idx)+', '
+            str_sel += ']'
+
+            to_print += 'Iteration %d: %f, %f, %f, %d, %s\n' % \
+                        (iter, self.best_fitness, self.best_sel_ratio, self.best_error, len(feature_sel), str_sel)
         return self.population[self.best_idx], self.best_fitness, to_print

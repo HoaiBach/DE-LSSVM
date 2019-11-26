@@ -85,12 +85,16 @@ class JADE:
         #     if idx % 1 == 0:
         #         pop[idx] = self.problem.generate_candidate(ind)
         pop = []
-        while len(pop) < self.popsize:
-            for rate in range(1, 101, 1):
-                if len(pop) < self.popsize:
-                    pop.append(self.problem.generate_candidate_with_nf(int(rate/100.0*self.problem.no_features)))
-                else:
-                    break
+        if Paras.init_style == 'interval':
+            while len(pop) < self.popsize:
+                for rate in range(1, 101, 1):
+                    if len(pop) < self.popsize:
+                        pop.append(self.problem.generate_candidate_with_nf(int(rate/100.0*self.problem.no_features)))
+                    else:
+                        break
+        else:
+            pop = 0.0 + np.random.rand(self.popsize, self.dims) * (1.0 - 0.0)
+
         return np.array(pop)
 
     def evolve(self):

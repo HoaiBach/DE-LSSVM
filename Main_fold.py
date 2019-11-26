@@ -17,6 +17,12 @@ if __name__ == '__main__':
     Paras.fit_normalized = sys.argv[4] == 'norm'
     if alg_style == 'embed':
         Paras.alpha = float(sys.argv[5])
+        # to allow
+        if Paras.alpha < 0:
+            Paras.alpha = abs(Paras.alpha)/100.0
+        Paras.init_style = sys.argv[6]
+        Paras.loss = sys.argv[7]
+        Paras.reg = sys.argv[8]
     elif alg_style == 'wrapper':
         Paras.w_wrapper = float(sys.argv[5])/100.0
 
@@ -24,9 +30,9 @@ if __name__ == '__main__':
     np.random.seed(seed)
 
     to_print = 'Style: %s \n' % alg_style
-    max_iterations = 50
+    max_iterations = 100
     to_print += 'Maximum number of iterations: %d \n' % max_iterations
-    pop_size = 300
+    pop_size = 100
     to_print += 'Population size: %d \n' % pop_size
     to_print += 'Alpha: %f \n' % Paras.alpha
     to_print += 'Threshold: %f \n' % Paras.threshold
@@ -68,6 +74,19 @@ if __name__ == '__main__':
     ave_sel_svm = 0.0
     ave_nf = 0.0
     ave_time = 0.0
+
+    fold_output = open('/home/nguyenhoai2/Grid/data/FSMathlab_fold/' + dataset, 'w')
+    fold_output.write('No folds: %d\n' % no_folds)
+    for train_index, test_index in sfold.split(X, y):
+        fold_output.write('Fold: %d\n' % fold_idx)
+        fold_idx += 1
+        fold_output.write('Train: ')
+        for idx_idx, idx in enumerate(train_index):
+            fold_output.write('%d, ' % idx if idx_idx < len(train_index) - 1 else '%d\n' % idx)
+        fold_output.write('Test: ')
+        for idx_idx, idx in enumerate(test_index):
+            fold_output.write('%d, ' % idx if idx_idx < len(test_index) - 1 else '%d\n' % idx)
+    fold_output.close()
 
     for train_index, test_index in sfold.split(X, y):
         to_print += '*********** Fold %d ***********\n' % fold_idx
@@ -157,11 +176,11 @@ if __name__ == '__main__':
             to_print += 'Built SVM: %f \n' % built_acc
             clf = svm.LinearSVC(random_state=1617, C=1.0, penalty='l1', dual=False)
             clf.fit(X_train, y_train)
-            svm_full_acc = balanced_accuracy_score(y_test, clf.predict(X_test))
+            svml1_full_acc = balanced_accuracy_score(y_test, clf.predict(X_test))
             clf.fit(X_train_sel, y_train)
-            svm_sel_acc = balanced_accuracy_score(y_test, clf.predict(X_test_sel))
-            to_print += 'Full SVM l1: %f \n' % svm_full_acc
-            to_print += 'Sel SVM l1: %f \n' % svm_sel_acc
+            svml1_sel_acc = balanced_accuracy_score(y_test, clf.predict(X_test_sel))
+            to_print += 'Full SVM l1: %f \n' % svml1_full_acc
+            to_print += 'Sel SVM l1: %f \n' % svml1_sel_acc
             to_print += 'Number of selected features by SVM l1: %d \n' % len(f_selected)
 
         elif alg_style == 'wrapper':
@@ -236,6 +255,11 @@ if __name__ == '__main__':
     to_print += 'Full KNN: %f \n' % ave_full_knn
     to_print += 'Sel KNN: %f \n' % ave_sel_knn
     to_print += 'Number of selected features: %f \n' % ave_nf
+    to_print += '***********************************Extra setting*****************************\n'
+    to_print += 'Init style: %s \n' % Paras.init_style
+    to_print += 'Normalized fitness: %r \n' % Paras.fit_normalized
+    to_print += 'Loss: %s \n' % Paras.loss
+    to_print += 'Reg: %s \n' % Paras.reg
 
     f = open(str(run)+'.txt', 'w')
     f.write(to_print)

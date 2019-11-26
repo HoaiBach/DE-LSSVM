@@ -1,9 +1,6 @@
 import numpy as np
 from sklearn.metrics.pairwise import rbf_kernel, linear_kernel, polynomial_kernel
-
-
-def random_init(popsize, dims, minpos, maxpos):
-    return minpos + np.random.rand(popsize, dims) * (maxpos-minpos)
+from scipy.stats import wilcoxon
 
 
 def jade_mutant(x_i, x_b, x_r1, x_r2, F):
@@ -52,3 +49,24 @@ def kernel_matrix(X1, X2=None, kernel='linear'):
     else:
         raise Exception('Kernel %s is not defined!!' % kernel)
 
+
+def wilcoxon_test(mine, enemy, minimized):
+    # 0 for mine == enemy, 1 for mine > enemy, -1 for mine < enemy
+    if np.sum(np.abs(np.array(mine)-np.array(enemy))) == 0:
+        return '='
+    compare_result = 0
+    _, pvalue = wilcoxon(mine, enemy, alternative='two-sided')
+    if pvalue < 0.05:
+        _, pvalue = wilcoxon(mine, enemy, alternative='greater')
+        if pvalue < 0.05:
+            compare_result = 1
+        else:
+            _, pvalue = wilcoxon(mine, enemy, alternative='less')
+            if pvalue < 0.05:
+                compare_result = -1
+    if compare_result == 1:
+        return '-' if minimized else '+'
+    elif compare_result == -1:
+        return '+' if minimized else '-'
+    else:
+        return '='

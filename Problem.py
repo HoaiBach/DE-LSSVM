@@ -107,6 +107,24 @@ class FS_LSSVM(Problem):
             indices = np.where(self.y == y_value)[0]
             self.class_weight[indices] = 1.0/y_count
 
+    def regularization(self, w):
+        if Paras.reg == 'l2':
+            return np.sqrt(np.sum(w**2))
+        elif Paras.reg == 'l1':
+            return np.sum(np.abs(w))
+        elif Paras.reg == 'l0':
+            return np.sum(np.abs(w) > 0)/float(self.no_features)
+        else:
+            return np.sqrt(np.sum(w**2))
+
+    def loss(self, output):
+        if Paras.loss == 'H':
+            return np.sum(np.maximum(1 - output * self.y, 0))
+        elif Paras.loss == 'B':
+            return len(np.where(output*self.y <= 0)[0])/float(self.no_instances)
+        else:
+            return np.sum(np.maximum(1 - output * self.y, 0))
+
     def fitness(self, sol_ori):
         sol = np.array(sol_ori)
         weight = sol[0:self.no_features]
@@ -120,17 +138,17 @@ class FS_LSSVM(Problem):
 
         # calculate reg
         if Paras.max_reg < 0:
-            reg_weight = np.sum(np.abs(weight_sel))
+            reg_weight = self.regularization(weight_sel)
         else:
-            reg_weight = (np.sum(np.abs(weight_sel))-Paras.min_reg)/(Paras.max_reg-Paras.min_reg)
+            reg_weight = (self.regularization(weight_sel)-Paras.min_reg)/(Paras.max_reg-Paras.min_reg)
 
         # calculate loss part
         output = np.dot(X_sel, np.reshape(weight_sel, (no_selected, 1)))+b
         output = np.ravel(output)
         if Paras.max_loss < 0:
-            loss = np.sum(np.maximum(1 - output * self.y, 0))
+            loss = self.loss(output)
         else:
-            loss = (np.sum(np.maximum(1 - output * self.y, 0)) - Paras.min_loss) / (Paras.max_loss - Paras.min_loss)
+            loss = (self.loss(output) - Paras.min_loss) / (Paras.max_loss - Paras.min_loss)
 
         if no_selected == 0:
             fitness = self.worst_fitness()
@@ -254,6 +272,13 @@ class FS_LSSVM(Problem):
         coef = tmp_clf.coef_[0]
         intercept = tmp_clf.intercept_[0]
         assert len(selected_index) == len(coef)
+
+        # tmp_clf = svm.LinearSVC(random_state=1617, C=1.0)
+        # X_train_sel = self.X[:, selected_index]
+        # tmp_clf.fit(X_train_sel, self.y)
+        # coef = tmp_clf.coef_[0]
+        # intercept = tmp_clf.intercept_[0]
+        # assert len(selected_index) == len(coef)
 
         new_sol = np.zeros(2*self.no_features+1)
         new_sol[self.no_features] = intercept

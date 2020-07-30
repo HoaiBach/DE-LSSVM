@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 from collections import OrderedDict
-import base
+import Base
 import tables
 import scipy
 import nonparametric_tests as nontest
@@ -213,9 +213,9 @@ for data_idx, dataset in enumerate(datasets):
     for method in de_methods_short+tr_methods+['Full']:
         method_result_knn = knn_accs[method][data_idx]
         method_result_svm = svm_accs[method][data_idx]
-        sig_result = base.wilcoxon_test(master_result_knn, method_result_knn, minimized=False)
+        sig_result = Base.wilcoxon_test(master_result_knn, method_result_knn, minimized=False)
         knn_accs_sig[method].append(sig_result)
-        sig_result = base.wilcoxon_test(master_result_svm, method_result_svm, minimized=False)
+        sig_result = Base.wilcoxon_test(master_result_svm, method_result_svm, minimized=False)
         svm_accs_sig[method].append(sig_result)
 
 # perform friedman test

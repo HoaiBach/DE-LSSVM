@@ -1,21 +1,26 @@
-import JADE_Embed, JADE_Wrapper
-import Problem
-import numpy as np
-import scipy
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn import svm, preprocessing
-from sklearn.metrics import balanced_accuracy_score, balanced_accuracy_score
-from sklearn.neighbors import KNeighborsClassifier as KNN
-import Paras
 import time
+import random
+
+import numpy as np
+import scipy.io
+from sklearn import svm
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.neighbors import KNeighborsClassifier as KNN
+
+import Base
+import JADE_Embed
+import JADE_Wrapper
+import JADE
+import Paras
+import Problem
 
 if __name__ == '__main__':
     import sys
     dataset = sys.argv[1]
     run = int(sys.argv[2])
-    alg_style = sys.argv[3]
+    Paras.alg_style = sys.argv[3]
     Paras.fit_normalized = sys.argv[4] == 'norm'
-    if alg_style == 'embed':
+    if Paras.alg_style == 'embed':
         Paras.alpha = float(sys.argv[5])
         # to allow
         if Paras.alpha < 0:
@@ -23,17 +28,18 @@ if __name__ == '__main__':
         Paras.init_style = sys.argv[6]
         Paras.loss = sys.argv[7]
         Paras.reg = sys.argv[8]
-    elif alg_style == 'wrapper':
+    elif Paras.alg_style == 'wrapper':
         Paras.w_wrapper = float(sys.argv[5])/100.0
+    elif Paras.alg_style == 'filter':
+        Paras.f_measure = sys.argv[5]
 
     seed = 1617*run
     np.random.seed(seed)
+    random.seed(seed)
 
-    to_print = 'Style: %s \n' % alg_style
-    max_iterations = 100
-    to_print += 'Maximum number of iterations: %d \n' % max_iterations
-    pop_size = 100
-    to_print += 'Population size: %d \n' % pop_size
+    to_print = 'Style: %s \n' % Paras.alg_style
+    to_print += 'Maximum number of iterations: %d \n' % Paras.max_iterations
+    to_print += 'Population size: %d \n' % Paras.pop_size
     to_print += 'Alpha: %f \n' % Paras.alpha
     to_print += 'Threshold: %f \n' % Paras.threshold
     to_print += 'Wrapper weight: %f \n' % Paras.w_wrapper
@@ -47,13 +53,6 @@ if __name__ == '__main__':
     y = mat['Y']    # label
     y = y[:, 0]
 
-    # testing
-    # X = -1 + np.random.rand(10, 5)*2
-    # W = np.array([-2, 0.01, 0.2, 0.01, 0])
-    # y = np.ravel(np.dot(X, np.reshape(W, (5, 1))))
-    # y[y > 0] = 1
-    # y[y < 0] = 0
-
     # ensure that y label is either -1 or 1
     num_class, count = np.unique(y, return_counts=True)
     n_classes = np.unique(y).shape[0]
@@ -64,9 +63,6 @@ if __name__ == '__main__':
     y[y == unique_classes[1]] = 1
     y = np.int8(y)
 
-    no_folds = min(5, min_class)
-    sfold = StratifiedKFold(n_splits=no_folds, shuffle=True, random_state=1617)
-
     fold_idx = 1
     ave_full_knn = 0.0
     ave_full_svm = 0.0
@@ -75,20 +71,9 @@ if __name__ == '__main__':
     ave_nf = 0.0
     ave_time = 0.0
 
-    fold_output = open('/home/nguyenhoai2/Grid/data/FSMathlab_fold/' + dataset, 'w')
-    fold_output.write('No folds: %d\n' % no_folds)
-    for train_index, test_index in sfold.split(X, y):
-        fold_output.write('Fold: %d\n' % fold_idx)
-        fold_idx += 1
-        fold_output.write('Train: ')
-        for idx_idx, idx in enumerate(train_index):
-            fold_output.write('%d, ' % idx if idx_idx < len(train_index) - 1 else '%d\n' % idx)
-        fold_output.write('Test: ')
-        for idx_idx, idx in enumerate(test_index):
-            fold_output.write('%d, ' % idx if idx_idx < len(test_index) - 1 else '%d\n' % idx)
-    fold_output.close()
+    no_folds, train_indices, test_indices = Base.load_folds(dataset)
 
-    for train_index, test_index in sfold.split(X, y):
+    for train_index, test_index in zip(train_indices, test_indices):
         to_print += '*********** Fold %d ***********\n' % fold_idx
         fold_idx += 1
         knn_full_acc = 0.0
@@ -100,24 +85,16 @@ if __name__ == '__main__':
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        X_min = np.min(X_train, axis=0)
-        X_max = np.max(X_train, axis=0)
-        non_dup = np.where(X_min != X_max)[0]
-        X_min = X_min[non_dup]
-        X_max = X_max[non_dup]
-        X_train = X_train[:, non_dup]
-        X_test = X_test[:, non_dup]
-        X_train = 2*(X_train - X_min) / (X_max - X_min)-1
-        X_test = 2*(X_test - X_min) / (X_max - X_min)-1
+        X_train, X_test = Base.normalise_data(X_train, X_test)
         no_features = X_train.shape[1]
 
-        if alg_style == 'embed':
+        if Paras.alg_style == 'embed':
             start = time.time()
             prob = Problem.FS_LSSVM(X_train, y_train)
             min_pos = np.array([-1.0, ]*(no_features+1)+[0.0, ]*no_features)
             max_pos = np.array([1.0, ]*(no_features+1)+[1.0, ]*no_features)
-            de = JADE_Embed.JADE(problem=prob, popsize=pop_size, dims=2 * no_features + 1, maxiters=max_iterations,
-                                 c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
+            de = JADE.JADE(problem=prob, popsize=Paras.pop_size, dims=2 * no_features + 1, maxiters=Paras.max_iterations,
+                           c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
             best_sol, best_fit, evo_process = de.evolve()
             exe_time = time.time()-start
             to_print += evo_process
@@ -183,14 +160,14 @@ if __name__ == '__main__':
             to_print += 'Sel SVM l1: %f \n' % svml1_sel_acc
             to_print += 'Number of selected features by SVM l1: %d \n' % len(f_selected)
 
-        elif alg_style == 'wrapper':
+        elif Paras.alg_style == 'wrapper':
             clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
             start = time.time()
             prob = Problem.FS_Wrapper(X_train, y_train, clf)
             min_pos = np.array([0, ]*no_features)
             max_pos = np.array([1, ]*no_features)
-            de = JADE_Wrapper.JADE(problem=prob, popsize=pop_size, dims=no_features, maxiters=max_iterations,
-                                 c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
+            de = JADE.JADE(problem=prob, popsize=Paras.pop_size, dims=no_features,
+                           maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
             best_sol, best_fit, evo_process = de.evolve()
             exe_time = time.time() - start
             to_print += evo_process

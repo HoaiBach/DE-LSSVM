@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 from collections import OrderedDict
-import base
+import Base
 import tables
 import scipy
 import nonparametric_tests as nontest
@@ -31,7 +31,6 @@ datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
          'Prostate', 'Ovarian']
 
 datasets = [ 'German', 'Musk1', 'DLBCL', 'Leukemia']
-
 
 de_methods = ['embed_not-norm_100', 'embed_not-norm_100_random']
 de_methods_short = ['Ratio', 'Random']
@@ -141,7 +140,7 @@ for method_idx, method in enumerate(de_methods_short):
     draw_method_nf.append(nf)
 
 x = np.arange(len(datasets))  # the label locations
-width = 0.35  # the width of the bars
+width = 0.45  # the width of the bars
 
 fig, ax = plt.subplots()
 rects = []
@@ -152,26 +151,32 @@ for method_idx, method in enumerate(de_methods_short):
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 # ax.set_ylabel('Feature ratio')
-ax.set_title('Selected feature ratio')
 ax.set_xticks(x)
 ax.set_xticklabels(datasets)
-ax.legend()
+ax.set_ylim([0.0, 1.19])
+# ax.legend()
 
 
 def autolabel(rects, ax):
     """Attach a text label above each bar in *rects*, displaying its height."""
     for rect in rects:
         height = rect.get_height()
-        ax.annotate('{:.2f}'.format(height),
+        ax.annotate('{:.3f}'.format(height),
                     xy=(rect.get_x() + rect.get_width() / 2, height),
                     xytext=(0, 3),  # 3 points vertical offset
                     textcoords="offset points",
-                    ha='center', va='bottom')
+                    ha='center', va='bottom', fontsize=17, rotation=40)
 
 for rect in rects:
     autolabel(rect, ax)
 fig.tight_layout()
-plt.savefig('Fig/vsRandom/Nf', format='pdf')
+
+plt.title('Feature ratio', fontsize=20, fontweight='bold')
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.tight_layout()
+plt.savefig('Fig/vsRandom/Nf.pdf', format='pdf')
+
 plt.close()
 
 # draw acc bar
@@ -183,7 +188,8 @@ for method_idx, method in enumerate(de_methods_short):
     draw_method_acc.append(acc)
 
 x = np.arange(len(datasets))  # the label locations
-width = 0.35  # the width of the bars
+width = 0.45  # the width of the bars
+
 
 fig_acc, ax_acc = plt.subplots()
 rects_acc = []
@@ -194,16 +200,74 @@ for method_idx, method in enumerate(de_methods_short):
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 # ax.set_ylabel('Feature ratio')
-ax_acc.set_title('SVM accuracy')
+# ax_acc.set_title()
 ax_acc.set_xticks(x)
 ax_acc.set_xticklabels(datasets)
-ax_acc.legend()
+ax_acc.set_ylim([0.0, 1.19])
 
 for rect in rects_acc:
     autolabel(rect, ax_acc)
 fig_acc.tight_layout()
-plt.savefig('Fig/vsRandom/SVMacc', format='pdf')
+
+
+# plt.legend(fontsize=20)
+plt.title('SVM accuracy', fontsize=20, fontweight='bold')
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.tight_layout()
+
+plt.savefig('Fig/vsRandom/SVMacc.pdf', format='pdf', bbox_inches='tight')
 plt.close()
+
+
+# draw legend
+# draw_method_acc = []
+# for method_idx, method in enumerate(de_methods_short):
+#     acc = []
+#     for dataset_idx, dataset in enumerate(datasets):
+#         acc.append(svm_accs[method][dataset_idx])
+#     draw_method_acc.append(acc)
+#
+# x = np.arange(len(datasets))  # the label locations
+# width = 0.45  # the width of the bars
+#
+# fig_acc, ax_acc = plt.subplots()
+# rects_acc = []
+# mid = len(de_methods_short)/2
+# for method_idx, method in enumerate(de_methods_short):
+#     rect_acc = ax_acc.bar(x + (method_idx-mid+0.5)*width, draw_method_acc[method_idx], width, label=method)
+#     rects_acc.append(rect_acc)
+
+# Add some text for labels, title and custom x-axis tick labels, etc.
+# ax.set_ylabel('Feature ratio')
+# ax_acc.set_title()
+# ax_acc.set_xticks(x)
+# ax_acc.set_xticklabels(datasets)
+# ax_acc.set_ylim([0.0, 1.19])
+# ax_acc.legend(ncol=2)
+#
+# for rect in rects_acc:
+#     autolabel(rect, ax_acc)
+# fig_acc.tight_layout()
+#
+#
+# # plt.legend(fontsize=20)
+# plt.title('SVM accuracy', fontsize=20, fontweight='bold')
+# plt.xticks(fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.tight_layout()
+#
+# plt.savefig('Fig/vsRandom/SVMacc_leg.pdf', format='pdf', bbox_inches='tight')
+#
+# handles, labels = ax.get_legend_handles_labels()
+# fig_legend = plt.figure(figsize=(2.1, 0.25))
+# axi = fig_legend.add_subplot()
+# fig_legend.legend(handles, labels, loc='center', ncol=2)
+# axi.xaxis.set_visible(False)
+# axi.yaxis.set_visible(False)
+# axi.axis('off')
+# fig_legend.savefig('Fig/vsRandom/Legend.pdf', format='pdf')
+# plt.close()
 
 # multiple line plot
 lstys = ['-', '--', '-.']
@@ -211,10 +275,13 @@ for dataset_idx, dataset in enumerate(datasets):
     iterations = np.arange(no_iter)
     for method_idx, method in enumerate(de_methods_short):
         fitness = eps[method][dataset_idx]
-        plt.plot(iterations, fitness, lstys[method_idx], label=method)
-    plt.legend(loc='upper right')
-    plt.title(dataset, fontsize=16, fontweight='bold')
-    plt.xlabel('Iteration')
-    plt.ylabel('Fitness')
-    plt.savefig('Fig/vsRandom/'+dataset, format='pdf')
+        plt.plot(iterations, fitness, lstys[method_idx], label=method, linewidth=3)
+    plt.legend(loc='upper right', fontsize=20)
+    plt.title(dataset, fontsize=25, fontweight='bold')
+    plt.xlabel('Iteration', fontdict={'fontsize': 20})
+    plt.xticks(fontsize=20)
+    plt.ylabel('Fitness', fontdict={'fontsize': 20})
+    plt.yticks(fontsize=20)
+    plt.tight_layout()
+    plt.savefig('Fig/vsRandom/'+dataset+'.pdf', format='pdf',  bbox_inches='tight')
     plt.close()

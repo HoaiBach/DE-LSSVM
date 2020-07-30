@@ -1,6 +1,15 @@
+# evolutionary parameters
+max_iterations = 100
+pop_size = 100
+
 threshold = 0.7
 
+alg_style = 'embed' # embed|wrapper|filter
+parallel = False # True: run parallely/online, False: run sequentially/offline
+
+# parameters for wrapper
 w_wrapper = 1.0
+no_inner_folds = 3
 
 # parameters for Embedded feature selection
 # initialization style, can be random or interval initialization
@@ -16,4 +25,7 @@ max_loss = -1.0
 alpha = 100.0
 loss = 'H' # can be binary (B) or Hingle (H) loss
 reg = 'l1' # can be l0, l1, l2
+
+# Parameters for filter feature selection
+f_measure = 'relief' # relief|cor
 

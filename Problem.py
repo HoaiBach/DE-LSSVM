@@ -1,6 +1,6 @@
 import numpy as np
 import math
-import base
+import Base
 from sklearn.model_selection import StratifiedKFold
 from sklearn import svm
 from sklearn.metrics import balanced_accuracy_score
@@ -66,7 +66,7 @@ class FS_Wrapper(Problem):
         self.y = y
         num_class, count = np.unique(self.y, return_counts=True)
         min_class = np.min(count)
-        n_splits = min(min_class, 10)
+        n_splits = min(min_class, Paras.no_inner_folds)
         self.skf = StratifiedKFold(n_splits=n_splits, random_state=1617)
         self.no_features = self.X.shape[1]
         self.clf = clf
@@ -287,3 +287,102 @@ class FS_LSSVM(Problem):
             if f_weight != 0:
                 new_sol[self.no_features+f_idx+1] = 1.0
         return new_sol
+
+
+class FS_Filter(Problem):
+
+    def __init__(self, X, y):
+        Problem.__init__(self, minimized=True)
+        self.X = X
+        self.y = y
+        self.no_features = self.X.shape[1]
+
+    def fitness(self, sol):
+        sel_idx = np.where(sol > Paras.threshold)[0]
+        if len(sel_idx) == 0:
+            return self.worst_fitness(), 0, self.worst_fitness()
+
+        score = self.worst_fitness()
+        if Paras.f_measure == 'relief':
+            score = self.score_relief(sel_idx=sel_idx)
+
+        sel_ratio = float(len(sel_idx))/len(sol)
+        fitness = score
+        return fitness, sel_ratio, score
+
+    def score_relief(self, sel_idx):
+        '''
+        Calculate the relief score of the feature subsets selected in sel_idx
+        :param sel_idx: an array store the indices of selected features.
+        :return:
+        '''
+        from sklearn.metrics.pairwise import pairwise_distances
+        X_sel = self.X[:, sel_idx]
+        distance = pairwise_distances(X_sel, metric='manhattan')
+        k = 5
+        n_samples, n_features = X_sel.shape
+        score = 0
+
+        for idx in range(n_samples):
+            near_hit = []
+            near_miss = dict()
+
+            self_fea = X_sel[idx, :]
+            c = np.unique(self.y).tolist()
+
+            stop_dict = dict()
+            for label in c:
+                stop_dict[label] = 0
+            del c[c.index(self.y[idx])]
+
+            p_dict = dict()
+            p_label_idx = float(len(self.y[self.y == self.y[idx]])) / float(n_samples)
+
+            # for each label (apart from the one of the current isntace)
+            # build a ratio between the label and the current instance's label
+            for label in c:
+                p_label_c = float(len(self.y[self.y == label])) / float(n_samples)
+                p_dict[label] = p_label_c / (1 - p_label_idx)
+                near_miss[label] = []
+
+            distance_sort = []
+            distance[idx, idx] = np.max(distance[idx, :])
+
+            for i in range(n_samples):
+                distance_sort.append([distance[idx, i], int(i), self.y[i]])
+            distance_sort.sort(key=lambda x: x[0])
+
+            for i in range(n_samples):
+                # find k nearest hit points
+                if distance_sort[i][2] == self.y[idx]:
+                    if len(near_hit) < k:
+                        near_hit.append(distance_sort[i][1])
+                    elif len(near_hit) == k:
+                        stop_dict[y[idx]] = 1
+                else:
+                    # find k nearest miss points for each label
+                    if len(near_miss[distance_sort[i][2]]) < k:
+                        near_miss[distance_sort[i][2]].append(distance_sort[i][1])
+                    else:
+                        if len(near_miss[distance_sort[i][2]]) == k:
+                            stop_dict[distance_sort[i][2]] = 1
+                stop = True
+                for (key, value) in list(stop_dict.items()):
+                    if value != 1:
+                        stop = False
+                if stop:
+                    break
+
+            # update reliefF score
+            near_hit_term = np.zeros(n_features)
+            for ele in near_hit:
+                near_hit_term = np.array(abs(self_fea - X_sel[ele, :])) + np.array(near_hit_term)
+
+            near_miss_term = dict()
+            for (label, miss_list) in list(near_miss.items()):
+                near_miss_term[label] = np.zeros(n_features)
+                for ele in miss_list:
+                    near_miss_term[label] = np.array(abs(self_fea - X_sel[ele, :])) + np.array(near_miss_term[label])
+                score += near_miss_term[label] / (k * p_dict[label])
+            score -= near_hit_term / k
+        return -score

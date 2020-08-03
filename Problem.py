@@ -7,6 +7,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.base import clone
 from numpy.linalg import norm
 import Paras
+from skfeature.utility.mutual_information import su_calculation
 
 
 class Problem:
@@ -305,6 +306,10 @@ class FS_Filter(Problem):
         score = self.worst_fitness()
         if Paras.f_measure == 'relief':
             score = self.score_relief(sel_idx=sel_idx)
+        elif Paras.f_measure == 'cor':
+            score = self.score_cor(sel_idx=sel_idx)
+        else:
+            raise Exception('Measure %s has not been implemented' %Paras.f_measure)
 
         sel_ratio = float(len(sel_idx))/len(sol)
         fitness = score
@@ -358,7 +363,7 @@ class FS_Filter(Problem):
                     if len(near_hit) < k:
                         near_hit.append(distance_sort[i][1])
                     elif len(near_hit) == k:
-                        stop_dict[y[idx]] = 1
+                        stop_dict[self.y[idx]] = 1
                 else:
                     # find k nearest miss points for each label
                     if len(near_miss[distance_sort[i][2]]) < k:
@@ -385,4 +390,23 @@ class FS_Filter(Problem):
                     near_miss_term[label] = np.array(abs(self_fea - X_sel[ele, :])) + np.array(near_miss_term[label])
                 score += near_miss_term[label] / (k * p_dict[label])
             score -= near_hit_term / k
+
         return -score
+
+    def score_cor(self, sel_idx):
+        X_sel = self.X[:, sel_idx]
+        n_samples, n_features = X_sel.shape
+
+        rff = 0
+        rcf = 0
+        for i in range(n_features):
+            fi = X_sel[:, i]
+            rcf += su_calculation(fi, self.y)
+            for j in range(n_features):
+                if j > i:
+                    fj = X_sel[:, j]
+                    rff += su_calculation(fi, fj)
+        rff *= 2
+        merits = rcf / np.sqrt(n_features + rff)
+
+        return -merits

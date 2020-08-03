@@ -164,12 +164,18 @@ if __name__ == '__main__':
             to_print += 'Sel SVM l1: %f \n' % svml1_sel_acc
             to_print += 'Number of selected features by SVM l1: %d \n' % len(f_selected)
 
-        elif Paras.alg_style == 'wrapper':
-            clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
+        else:
+            if Paras.alg_style == 'wrapper':
+                clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
+                prob = Problem.FS_Wrapper(X_train, y_train, clf)
+            elif Paras.alg_style == 'filter':
+                prob = Problem.FS_Filter(X_train, y_train)
+            else:
+                raise Exception('Algorithm style %s is not implemented. \n' % Paras.alg_style)
+
             start = time.time()
-            prob = Problem.FS_Wrapper(X_train, y_train, clf)
-            min_pos = np.array([0, ]*no_features)
-            max_pos = np.array([1, ]*no_features)
+            min_pos = np.array([0, ] * no_features)
+            max_pos = np.array([1, ] * no_features)
             de = JADE.JADE(problem=prob, popsize=Paras.pop_size, dims=no_features,
                            maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
             best_sol, best_fit, evo_process = de.evolve()

@@ -40,7 +40,7 @@ class JADE:
         # evaluate the initialized population
         temp = self.evaluate_pop()
         self.fitness = temp[:, 1]
-        self.c1 = temp[:, 2]  # c1 = reg if embed, sel_raito = other
+        self.c1 = temp[:, 2]  # c1 = reg if embed, sel_ratio = other
         self.c2 = temp[:, 3]  # c2 = loss if embed, error if wrapper, score if filter
 
         if self.problem.minimized:
@@ -66,6 +66,7 @@ class JADE:
                 pop = self.minpos + np.random.rand(self.popsize, self.dims) * (self.maxpos - self.minpos)
 
             self.population = np.array(pop)
+
             # base on the init population, initialize min and max range for weight part
             max_pos = np.max(self.population[:, :self.problem.no_features + 1])
             min_pos = np.min(self.population[:, self.problem.no_features + 1])
@@ -270,105 +271,3 @@ class JADE:
 
         return self.population[self.best_idx], self.best_fitness, to_print
 
-    # def evolve_parallel(self):
-    #     mean_cr = 0.5
-    #     mean_f = 0.5
-    #     std = 0.1
-    #     archive = []
-    #     to_print = self.head_print
-    #
-    #     for iter in range(self.maxiters):
-    #         start = time.time()
-    #         trial_list = []
-    #         crs = np.random.normal(mean_cr, std, self.popsize)
-    #         crs[crs > 1.0] = 1.0
-    #         crs[crs < 0.0] = 0.0
-    #         fs = np.random.normal(mean_f, std, self.popsize)
-    #         fs[fs > 1.0] = 1.0
-    #         fs[fs < 0.0] = 0.
-    #         sort_idx = np.argsort(self.fitness)
-    #         if self.problem.minimized:
-    #             top_indices = sort_idx[:self.num_top]
-    #         else:
-    #             top_indices = sort_idx[-self.num_top:]
-    #
-    #         for idx, ind in enumerate(self.population):
-    #             cr = crs[idx]
-    #             f = fs[idx]
-    #             idx_top = np.random.choice(top_indices)
-    #             x_top = self.population[idx_top]
-    #             while True:
-    #                 idx_r1 = np.random.randint(self.popsize)
-    #                 if idx_r1 != idx:
-    #                     break
-    #             x_r1 = self.population[idx_r1]
-    #             while True:
-    #                 idx_r2 = np.random.randint(self.popsize + len(archive))
-    #                 if idx_r2 != idx and idx_r2 != idx_r1:
-    #                     break
-    #             if idx_r2 < self.popsize:
-    #                 x_r2 = self.population[idx_r2]
-    #             else:
-    #                 x_r2 = np.array(archive[idx_r2 - self.popsize])
-    #             mutant = jade_mutant(x_i=ind, x_b=x_top, x_r1=x_r1, x_r2=x_r2, F=f)
-    #             trial = jade_crossover(x_i=ind, v=mutant, CR=cr,
-    #                                    minpos=self.minpos, maxpos=self.maxpos)
-    #             trial_list.append([idx, trial])
-    #
-    #         # evaluate all trials parallely
-    #         pool = Pool(processes=8)
-    #         test = pool.map(self.core_evaluate, trial_list)
-    #         pool.close()
-    #
-    #         success_cr = []
-    #         success_f = []
-    #
-    #         for ele in test:
-    #             idx, trial_fit, trial_c1, trial_c2 = ele[0], ele[1], ele[2], ele[3]
-    #             if not self.problem.is_better(self.fitness[idx], trial_fit):
-    #                 archive.append(np.copy(self.population[idx]))
-    #                 self.population[idx] = trial_list[idx][1]
-    #                 self.fitness[idx] = trial_fit
-    #                 self.c1[idx] = trial_c1
-    #                 self.c2[idx] = trial_c2
-    #                 success_cr.append(crs[idx])
-    #                 success_f.append(fs[idx])
-    #
-    #                 # check to update the best solution
-    #                 if self.problem.is_better(self.fitness[idx], self.best_fitness):
-    #                     self.best_fitness = self.fitness[idx]
-    #                     self.best_idx = idx
-    #                     self.best_c1 = self.c1[idx]
-    #                     self.best_c2 = self.c2[idx]
-    #
-    #         # Maintain the size of archive
-    #         while len(archive) > self.popsize:
-    #             idx_remove = np.random.randint(len(archive))
-    #             archive = np.delete(archive, idx_remove, 0).tolist()
-    #         if len(success_cr) <= 0:
-    #             mean_cr = (1 - self.c) * mean_cr
-    #         else:
-    #             mean_cr = (1 - self.c) * mean_cr + self.c * np.mean(success_cr)
-    #         if np.sum(success_f) == 0:
-    #             mean_f = (1 - self.c) * mean_f
-    #         else:
-    #             mean_f = (1 - self.c) * mean_f + self.c * np.sum(np.asarray(success_f) ** 2) / np.sum(
-    #                 success_f)
-    #
-    #         # Extract info to print out:
-    #         if Paras.alg_style == 'embed':
-    #             feature_mask = np.copy(self.population[self.best_idx][self.problem.no_features + 1:])
-    #         else:
-    #             feature_mask = np.copy(self.population[self.best_idx])
-    #         assert len(feature_mask) == self.problem.no_features
-    #         feature_sel = np.where(feature_mask > Paras.threshold)[0]
-    #         str_sel = '['
-    #         for feature_idx in feature_sel:
-    #             str_sel += str(feature_idx) + ', '
-    #         str_sel += ']'
-    #         to_print += 'Iteration %d: %f, %f, %f, %d, %s\n' % \
-    #                     (iter, self.best_fitness, self.best_c1, self.best_c2, len(feature_sel), str_sel)
-    #         iter_time = time.time() - start
-    #         # print('An iteration %d takes: %f \n' % (iter, iter_time))
-    #
-    #     return self.population[self.best_idx], self.best_fitness, to_print

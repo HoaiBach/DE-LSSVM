@@ -7,6 +7,7 @@ This class implement algorithms for large datasets
 
 import JADE
 import Problem
+import random
 import numpy as np
 import scipy.io
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -22,34 +23,40 @@ if __name__ == '__main__':
     dataset = sys.argv[1]
     run = int(sys.argv[2])
     Paras.alg_style = sys.argv[3]
-    Paras.fit_normalized = sys.argv[4] == 'norm'
+    Paras.parallel = sys.argv[4] == '1'
+    Paras.fit_normalized = sys.argv[5] == 'norm'
     if Paras.alg_style == 'embed':
-        Paras.alpha = float(sys.argv[5])
+        Paras.alpha = float(sys.argv[6])
         # to allow
         if Paras.alpha < 0:
             Paras.alpha = abs(Paras.alpha)/100.0
-        Paras.init_style = sys.argv[6]
-        Paras.loss = sys.argv[7]
-        Paras.reg = sys.argv[8]
+        Paras.init_style = sys.argv[7]
+        Paras.loss = sys.argv[8]
+        Paras.reg = sys.argv[9]
     elif Paras.alg_style == 'wrapper':
-        Paras.w_wrapper = float(sys.argv[5])/100.0
+        Paras.w_wrapper = float(sys.argv[6])/100.0
     elif Paras.alg_style == 'filter':
-        Paras.f_measure = sys.argv[5]
+        Paras.f_measure = sys.argv[6]
 
     seed = 1617*run
     np.random.seed(seed)
+    random.seed(seed)
 
     to_print = 'Style: %s \n' % Paras.alg_style
     to_print += 'Maximum number of iterations: %d \n' % Paras.max_iterations
     to_print += 'Population size: %d \n' % Paras.pop_size
-    to_print += 'Alpha: %f \n' % Paras.alpha
+    if Paras.alg_style == 'wrapper':
+        to_print += 'Wrapper weight: %f \n' % Paras.w_wrapper
+    elif Paras.alg_style == 'embed':
+        to_print += 'Alpha: %f \n' % Paras.alpha
+    elif Paras.alg_style == 'filter':
+        to_print += 'Filter measure: %s\n' % Paras.f_measure
     to_print += 'Threshold: %f \n' % Paras.threshold
-    to_print += 'Wrapper weight: %f \n' % Paras.w_wrapper
     to_print += 'Normalized fitness: %s \n' % str(Paras.fit_normalized)
     to_print += '============================================\n'
 
     #load data
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMathlab/'+dataset+'.mat')
+    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/'+dataset+'.mat')
     X = mat['X']    # data
     X = X.astype(float)
     y = mat['Y']    # label

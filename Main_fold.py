@@ -40,14 +40,18 @@ if __name__ == '__main__':
     to_print = 'Style: %s \n' % Paras.alg_style
     to_print += 'Maximum number of iterations: %d \n' % Paras.max_iterations
     to_print += 'Population size: %d \n' % Paras.pop_size
-    to_print += 'Alpha: %f \n' % Paras.alpha
+    if Paras.alg_style == 'wrapper':
+        to_print += 'Wrapper weight: %f \n' % Paras.w_wrapper
+    elif Paras.alg_style == 'embed':
+        to_print += 'Alpha: %f \n' % Paras.alpha
+    elif Paras.alg_style == 'filter':
+        to_print += 'Filter measure: %s\n' % Paras.f_measure
     to_print += 'Threshold: %f \n' % Paras.threshold
-    to_print += 'Wrapper weight: %f \n' % Paras.w_wrapper
     to_print += 'Normalized fitness: %s \n' % str(Paras.fit_normalized)
     to_print += '============================================\n'
 
     #load data
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMathlab/'+dataset+'.mat')
+    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/'+dataset+'.mat')
     X = mat['X']    # data
     X = X.astype(float)
     y = mat['Y']    # label

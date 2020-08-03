@@ -5,21 +5,24 @@ This class implement algorithms for large datasets
 - implement offline JADE for wrapper - support parallel
 '''
 
-import JADE
-import Problem
 import random
+import time
+
 import numpy as np
 import scipy.io
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn import svm, preprocessing
-from sklearn.metrics import balanced_accuracy_score, balanced_accuracy_score
+from sklearn import svm
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier as KNN
-import Paras
-import time
+
 import Base
+import JADE
+import Paras
+import Problem
 
 if __name__ == '__main__':
     import sys
+
     dataset = sys.argv[1]
     run = int(sys.argv[2])
     Paras.alg_style = sys.argv[3]
@@ -29,16 +32,16 @@ if __name__ == '__main__':
         Paras.alpha = float(sys.argv[6])
         # to allow
         if Paras.alpha < 0:
-            Paras.alpha = abs(Paras.alpha)/100.0
+            Paras.alpha = abs(Paras.alpha) / 100.0
         Paras.init_style = sys.argv[7]
         Paras.loss = sys.argv[8]
         Paras.reg = sys.argv[9]
     elif Paras.alg_style == 'wrapper':
-        Paras.w_wrapper = float(sys.argv[6])/100.0
+        Paras.w_wrapper = float(sys.argv[6]) / 100.0
     elif Paras.alg_style == 'filter':
         Paras.f_measure = sys.argv[6]
 
-    seed = 1617*run
+    seed = 1617 * run
     np.random.seed(seed)
     random.seed(seed)
 
@@ -55,17 +58,17 @@ if __name__ == '__main__':
     to_print += 'Normalized fitness: %s \n' % str(Paras.fit_normalized)
     to_print += '============================================\n'
 
-    #load data
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/'+dataset+'.mat')
-    X = mat['X']    # data
+    # load data
+    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/' + dataset + '.mat')
+    X = mat['X']  # data
     X = X.astype(float)
-    y = mat['Y']    # label
+    y = mat['Y']  # label
     y = y[:, 0]
 
     # ensure that y label is either -1 or 1
     num_class, count = np.unique(y, return_counts=True)
     n_classes = np.unique(y).shape[0]
-    assert(n_classes == 2)
+    assert (n_classes == 2)
     min_class = np.min(count)
     unique_classes = np.unique(y)
     y[y == unique_classes[0]] = -1
@@ -99,12 +102,12 @@ if __name__ == '__main__':
     if Paras.alg_style == 'embed':
         start = time.time()
         prob = Problem.FS_LSSVM(X_train, y_train)
-        min_pos = np.array([-1.0, ]*(no_features+1)+[0.0, ]*no_features)
-        max_pos = np.array([1.0, ]*(no_features+1)+[1.0, ]*no_features)
+        min_pos = np.array([-1.0, ] * (no_features + 1) + [0.0, ] * no_features)
+        max_pos = np.array([1.0, ] * (no_features + 1) + [1.0, ] * no_features)
         de = JADE.JADE(problem=prob, popsize=Paras.pop_size, dims=2 * no_features + 1,
-                             maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
+                       maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
         best_sol, best_fit, evo_process = de.evolve()
-        exe_time = time.time()-start
+        exe_time = time.time() - start
         to_print += evo_process
         to_print += '============================================\n'
 
@@ -168,14 +171,20 @@ if __name__ == '__main__':
         to_print += 'Sel SVM l1: %f \n' % svml1_sel_acc
         to_print += 'Number of selected features by SVM l1: %d \n' % len(f_selected)
 
-    elif Paras.alg_style == 'wrapper':
-        clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
+    else:
+        if Paras.alg_style == 'wrapper':
+            clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
+            prob = Problem.FS_Wrapper(X_train, y_train, clf)
+        elif Paras.alg_style == 'filter':
+            prob = Problem.FS_Filter(X_train, y_train)
+        else:
+            raise Exception('Algorithm style %s is not implemented. \n' % Paras.alg_style)
+
         start = time.time()
-        prob = Problem.FS_Wrapper(X_train, y_train, clf)
-        min_pos = np.array([0, ]*no_features)
-        max_pos = np.array([1, ]*no_features)
+        min_pos = np.array([0, ] * no_features)
+        max_pos = np.array([1, ] * no_features)
         de = JADE.JADE(problem=prob, popsize=Paras.pop_size, dims=no_features,
-                                        maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
+                       maxiters=Paras.max_iterations, c=0.1, p=0.05, minpos=min_pos, maxpos=max_pos)
         best_sol, best_fit, evo_process = de.evolve()
         exe_time = time.time() - start
         to_print += evo_process
@@ -246,6 +255,6 @@ if __name__ == '__main__':
     to_print += 'Loss: %s \n' % Paras.loss
     to_print += 'Reg: %s \n' % Paras.reg
 
-    f = open(str(run)+'.txt', 'w')
+    f = open(str(run) + '.txt', 'w')
     f.write(to_print)
     f.close()

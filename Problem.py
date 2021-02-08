@@ -1,13 +1,12 @@
-import numpy as np
 import math
-import Base
-from sklearn.model_selection import StratifiedKFold
+
+import numpy as np
+from skfeature.utility.mutual_information import su_calculation
 from sklearn import svm
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.base import clone
-from numpy.linalg import norm
+from sklearn.model_selection import StratifiedKFold
+
 import Paras
-from skfeature.utility.mutual_information import su_calculation
 
 
 class Problem:
@@ -296,7 +295,9 @@ class FS_Filter(Problem):
         Problem.__init__(self, minimized=True)
         self.X = X
         self.y = y
-        self.no_features = self.X.shape[1]
+        self.no_instances, self.no_features = self.X.shape
+        self.red_matrix = np.zeros((self.no_features, self.no_features))-1
+        self.rel_matrix = np.array([-1.0, ] * self.no_features)
 
     def fitness(self, sol):
         sel_idx = np.where(sol > Paras.threshold)[0]
@@ -307,9 +308,10 @@ class FS_Filter(Problem):
         if Paras.f_measure == 'relief':
             score = self.score_relief(sel_idx=sel_idx)
         elif Paras.f_measure == 'cor':
-            score = self.score_cor(sel_idx=sel_idx)
+            # score = self.score_cor(sel_idx=sel_idx)
+            score = self.score_cor_fast(sel_idx=sel_idx)
         else:
-            raise Exception('Measure %s has not been implemented' %Paras.f_measure)
+            raise Exception('Measure %s has not been implemented' % Paras.f_measure)
 
         sel_ratio = float(len(sel_idx))/len(sol)
         fitness = score
@@ -323,7 +325,7 @@ class FS_Filter(Problem):
         '''
         from sklearn.metrics.pairwise import pairwise_distances
         X_sel = self.X[:, sel_idx]
-        distance = pairwise_distances(X_sel, metric='manhattan')
+        distance = pairwise_distances(self.X, metric='manhattan')
         k = 5
         n_samples, n_features = X_sel.shape
         score = 0
@@ -379,15 +381,15 @@ class FS_Filter(Problem):
                     break
 
             # update reliefF score
-            near_hit_term = np.zeros(n_features)
+            near_hit_term = 0
             for ele in near_hit:
-                near_hit_term = np.array(abs(self_fea - X_sel[ele, :])) + np.array(near_hit_term)
+                near_hit_term += np.sum(abs(self_fea - X_sel[ele, :]))
 
             near_miss_term = dict()
             for (label, miss_list) in list(near_miss.items()):
-                near_miss_term[label] = np.zeros(n_features)
+                near_miss_term[label] = 0
                 for ele in miss_list:
-                    near_miss_term[label] = np.array(abs(self_fea - X_sel[ele, :])) + np.array(near_miss_term[label])
+                    near_miss_term[label] = np.sum(abs(self_fea - X_sel[ele, :])) + near_miss_term[label]
                 score += near_miss_term[label] / (k * p_dict[label])
             score -= near_hit_term / k
 
@@ -410,3 +412,25 @@ class FS_Filter(Problem):
         merits = rcf / np.sqrt(n_features + rff)
 
         return -merits
+
+    def score_cor_fast(self, sel_idx):
+        rff = 0
+        rcf = 0
+        for i in sel_idx:
+            fi = self.X[:, i]
+            if self.rel_matrix[i] == -1:
+                self.rel_matrix[i] = su_calculation(fi, self.y)
+            rcf += self.rel_matrix[i]
+
+            for j in sel_idx:
+                if self.red_matrix[i][j] == -1:
+                    fj = self.X[:, j]
+                    self.red_matrix[i][j] = su_calculation(fi, fj)
+                    self.red_matrix[j][i] = self.red_matrix[i][j]
+                if j > i:
+                    rff += self.red_matrix[i][j]
+
+        rff *= 2
+        merits = rcf / np.sqrt(len(sel_idx) + rff)
+        return -merits
+

@@ -31,6 +31,9 @@ datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
 datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
             'Musk1', 'LSVT', 'Madelon','Colon', 'DLBCL', 'ALLAML', 'CNS']
 
+datasets = ['QsarAndrogenReceptor', 'Gametes', 'QsarOralToxicity', 'Gisette']
+# datasets = ['Parkinson', 'German',  'WBCD', 'Sonar', 'Musk1', 'LSVT', 'Madelon', 'Colon', 'DLBCL', 'ALLAML', 'CNS', 'Leukemia' ]
+
 de_methods = [
            #  'embed_not-norm_1_interval_B_l0',
            #  'embed_not-norm_10_interval_B_l0',
@@ -55,6 +58,9 @@ de_methods = [
     #        'embed_not-norm_10_interval_H_l2',
     #        'embed_not-norm_100_interval_H_l2',
     # 'wrapper_90', 'wrapper_98', 'wrapper_100'
+# 'wrapper_90-p', 'wrapper_98-p', 'wrapper_100-p'
+#     'JADE-relief',
+#     'JADE-cor'
            ]
 de_methods_short = [
     # 'B_l0_1', 'B_l0_10', 'B_l0_100',
@@ -66,10 +72,12 @@ de_methods_short = [
 # 'B_l0_1_v2', 'B_l0_10_v2', 'B_l0_100_v2',
     'LOEC',
     #             'H_l2_1', 'H_l2_10', 'H_l2_100'
-    'w90', 'w98', 'w100'
+    # 'w90', 'w98', 'w100'
+    # 'J-rel',
+    # 'J-cor'
                  ]
 tr_methods = ['CFS', 'GFS', 'mRMR', 'reliefF', 'RFS']
-tr_time_divide = [1.0, 21.0, 1.0, 15.0, 21.0]
+tr_time_divide = [1.0, 1.0, 1.0, 1.0, 1.0] #[1.0, 21.0, 1.0, 15.0, 21.0]
 master = 'H_l1_100'
 no_runs = 30
 
@@ -106,7 +114,7 @@ for data_idx, dataset in enumerate(datasets):
     knn_full = []
     svm_full = []
     # read the number of features for full
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMathlab/'+dataset+'.mat')
+    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/'+dataset+'.mat')
     X = mat['X']    # data
     X = X.astype(float)
     y = mat['Y']    # label
@@ -131,9 +139,9 @@ for data_idx, dataset in enumerate(datasets):
         de_time = []
 
         for run in range(1, no_runs + 1):
-            if os.path.exists('/local/scratch/GridResults/FeatureSelection/10Fold/Balance_accuracy/' +
+            if os.path.exists('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                               dataset + '/' + method + '/' + str(run) + '.txt'):
-                f = open('/local/scratch/GridResults/FeatureSelection/10Fold/Balance_accuracy/' +
+                f = open('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                          dataset + '/' + method + '/' + str(run) + '.txt', 'r')
                 lines = f.readlines()
 
@@ -178,9 +186,9 @@ for data_idx, dataset in enumerate(datasets):
         tr_time = []
         div = tr_time_divide[m_idx]
 
-        if os.path.exists('/home/nguyenhoai2/Grid/results/FeatureSelection/10Fold/Balance_accuracy/' +
+        if os.path.exists('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                           dataset + '/' + method + '.txt'):
-            f = open('/home/nguyenhoai2/Grid/results/FeatureSelection/10Fold/Balance_accuracy/' +
+            f = open('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                      dataset + '/' + method + '.txt', 'r')
             lines = f.readlines()
 
@@ -218,51 +226,51 @@ for data_idx, dataset in enumerate(datasets):
         sig_result = Base.wilcoxon_test(master_result_svm, method_result_svm, minimized=False)
         svm_accs_sig[method].append(sig_result)
 
-# perform friedman test
-benchmarks = ['w90', 'w98', 'w100']
-master = ['H_l1_100']
-friedman_results = []
-for dataset_idx, dataset in enumerate(datasets):
-    knn_result = []
-    svm_result = []
-    for method in benchmarks+master:
-        knn_result.append(1.0-np.array(knn_accs[method][dataset_idx]))
-        svm_result.append(1.0-np.array(svm_accs[method][dataset_idx]))
-    _, _, knn_rank, knn_pivots = nontest.friedman_test(*knn_result)
-    _, _, svm_rank, svm_pivots = nontest.friedman_test(*svm_result)
-    knn_pivots_dict = {key: knn_pivots[i] for i, key in enumerate(benchmarks+master)}
-    _, _, _, knn_pvalues = nontest.holm_test(knn_pivots_dict)
-    svm_pivots_dict = {key: svm_pivots[i] for i, key in enumerate(benchmarks + master)}
-    _, _, _, svm_pvalues = nontest.holm_test(svm_pivots_dict)
+# # perform friedman test
+# benchmarks = ['w90', 'w98', 'w100']
+# master = ['H_l1_100']
+# friedman_results = []
+# for dataset_idx, dataset in enumerate(datasets):
+#     knn_result = []
+#     svm_result = []
+#     for method in benchmarks+master:
+#         knn_result.append(1.0-np.array(knn_accs[method][dataset_idx]))
+#         svm_result.append(1.0-np.array(svm_accs[method][dataset_idx]))
+#     _, _, knn_rank, knn_pivots = nontest.friedman_test(*knn_result)
+#     _, _, svm_rank, svm_pivots = nontest.friedman_test(*svm_result)
+#     knn_pivots_dict = {key: knn_pivots[i] for i, key in enumerate(benchmarks+master)}
+#     _, _, _, knn_pvalues = nontest.holm_test(knn_pivots_dict)
+#     svm_pivots_dict = {key: svm_pivots[i] for i, key in enumerate(benchmarks + master)}
+#     _, _, _, svm_pvalues = nontest.holm_test(svm_pivots_dict)
+#
+#     compare_result = [dataset]
+#     for ben_idx, ben in enumerate(benchmarks):
+#         if svm_pvalues[ben_idx] < 0.05:
+#             compare_result.append(twof(svm_rank[ben_idx])+'*')
+#         else:
+#             compare_result.append(twof(svm_rank[ben_idx]))
+#
+#     compare_result.append(twof(svm_rank[len(benchmarks)]))
+#
+#     for ben_idx, ben in enumerate(benchmarks):
+#         if knn_pvalues[ben_idx] < 0.05:
+#             compare_result.append(twof(knn_rank[ben_idx])+'*')
+#         else:
+#             compare_result.append(twof(knn_rank[ben_idx]))
+#
+#     compare_result.append(twof(knn_rank[len(benchmarks)]))
+#
+#     friedman_results.append(compare_result)
+#
+# header = [['Dataset', '', '', '', 'SVM', '', '', '', 'KNN'], ['', 'w90', 'w98', 'w100', 'DEEFS','w90', 'w98', 'w100', 'DEEFS']]
+# data = header+friedman_results
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Friedmen test: Comparing with wrapper.')
+# table.set_label('tb:friedWrapper')
+# print(table)
 
-    compare_result = [dataset]
-    for ben_idx, ben in enumerate(benchmarks):
-        if svm_pvalues[ben_idx] < 0.05:
-            compare_result.append(twof(svm_rank[ben_idx])+'*')
-        else:
-            compare_result.append(twof(svm_rank[ben_idx]))
-
-    compare_result.append(twof(svm_rank[len(benchmarks)]))
-
-    for ben_idx, ben in enumerate(benchmarks):
-        if knn_pvalues[ben_idx] < 0.05:
-            compare_result.append(twof(knn_rank[ben_idx])+'*')
-        else:
-            compare_result.append(twof(knn_rank[ben_idx]))
-
-    compare_result.append(twof(knn_rank[len(benchmarks)]))
-
-    friedman_results.append(compare_result)
-
-header = [['Dataset', '', '', '', 'SVM', '', '', '', 'KNN'], ['', 'w90', 'w98', 'w100', 'DEEFS','w90', 'w98', 'w100', 'DEEFS']]
-data = header+friedman_results
-tabular = tables.Tabular(data)
-table = tables.Table(tabular)
-table.set_caption('Friedmen test: Comparing with wrapper.')
-table.set_label('tb:friedWrapper')
-print(table)
-
-# perform friedman test, embedded
+# perform friedman test, filter
 benchmarks = ['CFS', 'mRMR', 'reliefF']
 master = ['H_l1_100']
 knn_results = []
@@ -354,6 +362,50 @@ table.set_caption('Friedmen test: Comparing with embedded.')
 table.set_label('tb:friedEmbed')
 print(table)
 
+# # perform friedman test JADE filter
+# benchmarks = ['J-cor']
+# master = ['H_l1_100']
+# friedman_results = []
+# for dataset_idx, dataset in enumerate(datasets):
+#     knn_result = []
+#     svm_result = []
+#     for method in benchmarks+master:
+#         knn_result.append(1.0-np.array(knn_accs[method][dataset_idx]))
+#         svm_result.append(1.0-np.array(svm_accs[method][dataset_idx]))
+#     _, _, knn_rank, knn_pivots = nontest.friedman_test(*knn_result)
+#     _, _, svm_rank, svm_pivots = nontest.friedman_test(*svm_result)
+#     knn_pivots_dict = {key: knn_pivots[i] for i, key in enumerate(benchmarks+master)}
+#     _, _, _, knn_pvalues = nontest.holm_test(knn_pivots_dict)
+#     svm_pivots_dict = {key: svm_pivots[i] for i, key in enumerate(benchmarks + master)}
+#     _, _, _, svm_pvalues = nontest.holm_test(svm_pivots_dict)
+#
+#     compare_result = [dataset]
+#     for ben_idx, ben in enumerate(benchmarks):
+#         if svm_pvalues[ben_idx] < 0.05:
+#             compare_result.append(twof(svm_rank[ben_idx])+'*')
+#         else:
+#             compare_result.append(twof(svm_rank[ben_idx]))
+#
+#     compare_result.append(twof(svm_rank[len(benchmarks)]))
+#
+#     for ben_idx, ben in enumerate(benchmarks):
+#         if knn_pvalues[ben_idx] < 0.05:
+#             compare_result.append(twof(knn_rank[ben_idx])+'*')
+#         else:
+#             compare_result.append(twof(knn_rank[ben_idx]))
+#
+#     compare_result.append(twof(knn_rank[len(benchmarks)]))
+#
+#     friedman_results.append(compare_result)
+#
+# header = [['Dataset', '', 'SVM', '', 'KNN'], ['',  'J-cor', 'DEEFS', 'J-cor', 'DEEFS']]
+# data = header+friedman_results
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Friedmen test: Comparing with wrapper.')
+# table.set_label('tb:friedWrapper')
+# print(table)
+
 for method in de_methods_short+tr_methods+['Full']:
     tmp_ave = []
     for arr_acc in knn_accs[method]:
@@ -376,66 +428,66 @@ for method in de_methods_short + tr_methods:
     times[method] = tmp_ave
 
 
-# Print data table
-header = [['', '#Features', '#Instances', 'Class ratio']]
-data = []
-for data_idx, dataset in enumerate(datasets):
-    data.append([dataset, data_info['nf'][data_idx], data_info['ni'][data_idx],
-                twof(data_info['clp'][data_idx])+':'+twof(data_info['cln'][data_idx])])
-data = header+data
-tabular = tables.Tabular(data)
-table = tables.Table(tabular)
-table.set_caption('Dataset.')
-table.set_label('tb:dataset')
-print(table)
+# # Print data table
+# header = [['', '#Features', '#Instances', 'Class ratio']]
+# data = []
+# for data_idx, dataset in enumerate(datasets):
+#     data.append([dataset, data_info['nf'][data_idx], data_info['ni'][data_idx],
+#                 twof(data_info['clp'][data_idx])+':'+twof(data_info['cln'][data_idx])])
+# data = header+data
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Dataset.')
+# table.set_label('tb:dataset')
+# print(table)
 
-# Print comparison with using all features
-header = [['', 'SVM acc', '', 'KNN acc', '', 'NF', ''],
-          ['Dataset', 'Full', 'DEEFS', 'Full', 'DEEFS', 'Full', 'DEEFS']]
-data = []
-for data_idx, dataset in enumerate(datasets):
-    row_data = []
-    row_data.append(dataset)
-    row_data.append(twof(svm_accs['Full'][data_idx]*100)+' '+svm_accs_sig['Full'][data_idx])
-    row_data.append(twof(svm_accs['H_l1_100'][data_idx]*100))
-    row_data.append(twof(knn_accs['Full'][data_idx]*100)+' '+knn_accs_sig['Full'][data_idx])
-    row_data.append(twof(knn_accs['H_l1_100'][data_idx]*100))
-    row_data.append(twof(nfs['Full'][data_idx]))
-    row_data.append(twof(nfs['H_l1_100'][data_idx]))
-    data.append(row_data)
-data = header+data
-tabular = tables.Tabular(data)
-table = tables.Table(tabular)
-table.set_caption('Compare with using all features.')
-table.set_label('tb:vsAll')
-print(table)
+# # Print comparison with using all features
+# header = [['', 'SVM acc', '', 'KNN acc', '', 'NF', ''],
+#           ['Dataset', 'Full', 'DEEFS', 'Full', 'DEEFS', 'Full', 'DEEFS']]
+# data = []
+# for data_idx, dataset in enumerate(datasets):
+#     row_data = []
+#     row_data.append(dataset)
+#     row_data.append(twof(svm_accs['Full'][data_idx]*100)+' '+svm_accs_sig['Full'][data_idx])
+#     row_data.append(twof(svm_accs['H_l1_100'][data_idx]*100))
+#     row_data.append(twof(knn_accs['Full'][data_idx]*100)+' '+knn_accs_sig['Full'][data_idx])
+#     row_data.append(twof(knn_accs['H_l1_100'][data_idx]*100))
+#     row_data.append(twof(nfs['Full'][data_idx]))
+#     row_data.append(twof(nfs['H_l1_100'][data_idx]))
+#     data.append(row_data)
+# data = header+data
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Compare with using all features.')
+# table.set_label('tb:vsAll')
+# print(table)
 
-# Print comparison with using wrapper
-header = [['', '', '', '','SVM acc', '', '', '', 'KNN acc', '', '', '', 'NF'],
-          ['Dataset', 'w90', 'w98', 'w100', 'DEEFS', 'w90', 'w98', 'w100', 'DEEFS', 'w90', 'w98', 'w100', 'DEEFS',]]
-data = []
-for data_idx, dataset in enumerate(datasets):
-    row_data = []
-    row_data.append(dataset)
-    row_data.append(twof(svm_accs['w90'][data_idx]*100)+' '+svm_accs_sig['w90'][data_idx])
-    row_data.append(twof(svm_accs['w98'][data_idx]*100)+' '+svm_accs_sig['w98'][data_idx])
-    row_data.append(twof(svm_accs['w100'][data_idx]*100)+' '+svm_accs_sig['w100'][data_idx])
-    row_data.append(twof(svm_accs['H_l1_100'][data_idx]*100))
-    row_data.append(twof(knn_accs['w90'][data_idx]*100)+' '+knn_accs_sig['w90'][data_idx])
-    row_data.append(twof(knn_accs['w98'][data_idx]*100)+' '+knn_accs_sig['w98'][data_idx])
-    row_data.append(twof(knn_accs['w100'][data_idx]*100)+' '+knn_accs_sig['w100'][data_idx])
-    row_data.append(twof(knn_accs['H_l1_100'][data_idx]*100))
-    row_data.append(twof(nfs['w90'][data_idx]))
-    row_data.append(twof(nfs['w98'][data_idx]))
-    row_data.append(twof(nfs['w100'][data_idx]))
-    row_data.append(twof(nfs['H_l1_100'][data_idx]))
-    data.append(row_data)
-data = header+data
-tabular = tables.Tabular(data)
-table = tables.Table(tabular)
-table.set_caption('Compare with wrapper.')
-table.set_label('tb:vsWrapper')
-print(table)
+# # Print comparison with using wrapper
+# header = [['', '', '', '','SVM acc', '', '', '', 'KNN acc', '', '', '', 'NF'],
+#           ['Dataset', 'w90', 'w98', 'w100', 'DEEFS', 'w90', 'w98', 'w100', 'DEEFS', 'w90', 'w98', 'w100', 'DEEFS',]]
+# data = []
+# for data_idx, dataset in enumerate(datasets):
+#     row_data = []
+#     row_data.append(dataset)
+#     row_data.append(twof(svm_accs['w90'][data_idx]*100)+' '+svm_accs_sig['w90'][data_idx])
+#     row_data.append(twof(svm_accs['w98'][data_idx]*100)+' '+svm_accs_sig['w98'][data_idx])
+#     row_data.append(twof(svm_accs['w100'][data_idx]*100)+' '+svm_accs_sig['w100'][data_idx])
+#     row_data.append(twof(svm_accs['H_l1_100'][data_idx]*100))
+#     row_data.append(twof(knn_accs['w90'][data_idx]*100)+' '+knn_accs_sig['w90'][data_idx])
+#     row_data.append(twof(knn_accs['w98'][data_idx]*100)+' '+knn_accs_sig['w98'][data_idx])
+#     row_data.append(twof(knn_accs['w100'][data_idx]*100)+' '+knn_accs_sig['w100'][data_idx])
+#     row_data.append(twof(knn_accs['H_l1_100'][data_idx]*100))
+#     row_data.append(twof(nfs['w90'][data_idx]))
+#     row_data.append(twof(nfs['w98'][data_idx]))
+#     row_data.append(twof(nfs['w100'][data_idx]))
+#     row_data.append(twof(nfs['H_l1_100'][data_idx]))
+#     data.append(row_data)
+# data = header+data
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Compare with wrapper.')
+# table.set_label('tb:vsWrapper')
+# print(table)
 
 # Print comparison with using embedded
 header = [['', '', '', '','SVM acc', '', '', '', 'KNN acc'],
@@ -506,21 +558,44 @@ table.set_caption('Computation time.')
 table.set_label('tb:vsTime')
 print(table)
 
-# df_svm = pd.DataFrame(svm_accs).round(4)
-# # print(df_svm.to_csv(index=False))
-# print(df_svm.to_latex(index=False))
-# df_svm_sig = pd.DataFrame(svm_accs_sig)
-# print(df_svm_sig.to_latex(index=False))
-#
-# df_knn = pd.DataFrame(knn_accs).round(4)
-# print(df_knn.to_latex(index=False))
-# # print(df_knn.to_csv(index=False))
-# df_knn_sig = pd.DataFrame(knn_accs_sig)
-# print(df_knn_sig.to_latex(index=False))
-#
-# df_nf = pd.DataFrame(nfs).round(4)
-# print(df_nf.to_latex(index=False))
-# # print(df_nf.to_csv(index=False))
+# # print Jade filter
+# header = [['', '','SVM acc', '', 'KNN acc',   '', 'NF'],
+#           ['Dataset',  'J-cor', 'DEEFS', 'J-cor', 'DEEFS',  'J-cor', 'DEEFS',]]
+# data = []
+# for data_idx, dataset in enumerate(datasets):
+#     row_data = []
+#     row_data.append(dataset)
+#     # row_data.append(twof(svm_accs['J-rel'][data_idx]*100)+' '+svm_accs_sig['J-rel'][data_idx])
+#     row_data.append(twof(svm_accs['J-cor'][data_idx]*100)+' '+svm_accs_sig['J-cor'][data_idx])
+#     row_data.append(twof(svm_accs['H_l1_100'][data_idx]*100))
+#     # row_data.append(twof(knn_accs['J-rel'][data_idx]*100)+' '+knn_accs_sig['J-rel'][data_idx])
+#     row_data.append(twof(knn_accs['J-cor'][data_idx]*100)+' '+knn_accs_sig['J-cor'][data_idx])
+#     row_data.append(twof(knn_accs['H_l1_100'][data_idx]*100))
+#     # row_data.append(twof(nfs['J-rel'][data_idx]))
+#     row_data.append(twof(nfs['J-cor'][data_idx]))
+#     row_data.append(twof(nfs['H_l1_100'][data_idx]))
+#     data.append(row_data)
+# data = header+data
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Compare with filter using JADE.')
+# table.set_label('tb:vsFilterJADE')
+# print(table)
 
 
-
+# # Computation times
+# header = [['Dataset', 'J-cor', 'DEEFS']]
+# data = []
+# for data_idx, dataset in enumerate(datasets):
+#     row_data = []
+#     row_data.append(dataset)
+#     # row_data.append(twof(times['J-rel'][data_idx]))
+#     row_data.append(twof(times['J-cor'][data_idx]))
+#     row_data.append(twof(times['H_l1_100'][data_idx]))
+#     data.append(row_data)
+# data = header+data
+# tabular = tables.Tabular(data)
+# table = tables.Table(tabular)
+# table.set_caption('Computation time.')
+# table.set_label('tb:vsTime')
+# print(table)

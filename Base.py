@@ -3,6 +3,7 @@ from sklearn.metrics.pairwise import rbf_kernel, linear_kernel, polynomial_kerne
 from scipy.stats import wilcoxon
 import scipy.io
 from sklearn.model_selection import StratifiedKFold
+import Paras
 
 
 def jade_mutant(x_i, x_b, x_r1, x_r2, F):
@@ -92,7 +93,7 @@ def load_folds(dataset):
     :param dataset:
     :return: number of folds, indicies of instances in each fold
     '''
-    fold_read = open('/home/nguyenhoai2/Grid/data/FSMathlab_fold/' + dataset, 'r')
+    fold_read = open(Paras.data_dir+'FSMatlab_fold/' + dataset, 'r')
     lines = fold_read.readlines()
     no_folds = int(lines[0].split(': ')[1])
     train_folds = []

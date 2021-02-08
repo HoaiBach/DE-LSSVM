@@ -1,5 +1,5 @@
-import time
 import random
+import time
 
 import numpy as np
 import scipy.io
@@ -8,30 +8,30 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier as KNN
 
 import Base
-import JADE_Embed
-import JADE_Wrapper
 import JADE
 import Paras
 import Problem
 
 if __name__ == '__main__':
     import sys
+
     dataset = sys.argv[1]
     run = int(sys.argv[2])
     Paras.alg_style = sys.argv[3]
-    Paras.fit_normalized = sys.argv[4] == 'norm'
+    Paras.parallel = sys.argv[4] == '1'
+    Paras.fit_normalized = sys.argv[5] == 'norm'
     if Paras.alg_style == 'embed':
-        Paras.alpha = float(sys.argv[5])
+        Paras.alpha = float(sys.argv[6])
         # to allow
         if Paras.alpha < 0:
             Paras.alpha = abs(Paras.alpha)/100.0
-        Paras.init_style = sys.argv[6]
-        Paras.loss = sys.argv[7]
-        Paras.reg = sys.argv[8]
+        Paras.init_style = sys.argv[7]
+        Paras.loss = sys.argv[8]
+        Paras.reg = sys.argv[9]
     elif Paras.alg_style == 'wrapper':
-        Paras.w_wrapper = float(sys.argv[5])/100.0
+        Paras.w_wrapper = float(sys.argv[6])/100.0
     elif Paras.alg_style == 'filter':
-        Paras.f_measure = sys.argv[5]
+        Paras.f_measure = sys.argv[6]
 
     seed = 1617*run
     np.random.seed(seed)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     to_print += '============================================\n'
 
     #load data
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMatlab/'+dataset+'.mat')
+    mat = scipy.io.loadmat(Paras.data_dir + 'FSMatlab/'+dataset+'.mat')
     X = mat['X']    # data
     X = X.astype(float)
     y = mat['Y']    # label

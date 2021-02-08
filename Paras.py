@@ -1,3 +1,5 @@
+data_dir = '/home/nguyenhoai2/Grid/data/'
+
 # evolutionary parameters
 max_iterations = 100
 pop_size = 100

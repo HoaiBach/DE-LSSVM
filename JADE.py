@@ -129,9 +129,8 @@ class JADE:
         archive = []
         to_print = self.head_print
 
-        for iter in range(self.maxiters):
+        for iteration in range(self.maxiters):
             start = time.time()
-
             success_cr = []
             success_f = []
             crs = np.random.normal(mean_cr, std, self.popsize)
@@ -265,9 +264,9 @@ class JADE:
                 str_sel += str(feature_idx) + ', '
             str_sel += ']'
             to_print += 'Iteration %d: %f, %f, %f, %d, %s\n' % \
-                        (iter, self.best_fitness, self.best_c1, self.best_c2, len(feature_sel), str_sel)
+                        (iteration, self.best_fitness, self.best_c1, self.best_c2, len(feature_sel), str_sel)
             iter_time = time.time() - start
-            # print('An iteration %d takes: %f \n' % (iter, iter_time))
+            print('An iteration %d takes: %f \n' % (iteration, iter_time))
 
         return self.population[self.best_idx], self.best_fitness, to_print
 

@@ -30,11 +30,15 @@ datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
             'Musk1', 'LSVT', 'Madelon','Colon', 'DLBCL', 'ALLAML', 'CNS', 'Leukemia',
          'Prostate', 'Ovarian']
 
-datasets = [ 'German', 'Musk1', 'DLBCL', 'Leukemia']
+datasets = ['German', 'WBCD', 'Sonar', 'LSVT', 'QsarAndrogenReceptor' , 'ALLAML', 'Prostate', 'Ovarian', 'Musk1']
+short_datasets = ['German', 'WBCD', 'Sonar', 'LSVT', 'QAR' , 'ALLAML', 'Prostate', 'Ovarian', 'Musk1']
 
 de_methods = ['embed_not-norm_100', 'embed_not-norm_100_random']
 de_methods_short = ['Ratio', 'Random']
-no_runs = 30
+de_methods = ['embed_not-norm_100']
+de_methods_short = ['DEFS']
+out_dir = '/run/media/nguyenhoai2/Bach/ICDM2021/Fig/EPOnly/'
+no_runs = 2
 no_iter = 100
 
 knn_accs = OrderedDict([('Datasets', [])])
@@ -60,7 +64,7 @@ for data_idx, dataset in enumerate(datasets):
     knn_full = []
     svm_full = []
     # read the number of features for full
-    mat = scipy.io.loadmat('/home/nguyenhoai2/Grid/data/FSMathlab/'+dataset+'.mat')
+    mat = scipy.io.loadmat('/vol/grid-solar/sgeusers/nguyenhoai2/Dataset/FSMatlab/'+dataset+'.mat')
     X = mat['X']    # data
     X = X.astype(float)
     y = mat['Y']    # label
@@ -86,9 +90,9 @@ for data_idx, dataset in enumerate(datasets):
         no_ep_repeat = 0
 
         for run in range(1, no_runs + 1):
-            if os.path.exists('/local/scratch/GridResults/FeatureSelection/10Fold/Balance_accuracy/' +
+            if os.path.exists('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                               dataset + '/' + method + '/' + str(run) + '.txt'):
-                f = open('/local/scratch/GridResults/FeatureSelection/10Fold/Balance_accuracy/' +
+                f = open('/local/scratch/GridResults/JADE/10Fold/Balance_accuracy/' +
                          dataset + '/' + method + '/' + str(run) + '.txt', 'r')
                 lines = f.readlines()
 
@@ -175,7 +179,7 @@ plt.title('Feature ratio', fontsize=20, fontweight='bold')
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.tight_layout()
-plt.savefig('Fig/vsRandom/Nf.pdf', format='pdf')
+plt.savefig(out_dir+'Nf.pdf', format='pdf')
 
 plt.close()
 
@@ -216,7 +220,7 @@ plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.tight_layout()
 
-plt.savefig('Fig/vsRandom/SVMacc.pdf', format='pdf', bbox_inches='tight')
+plt.savefig(out_dir+'SVMacc.pdf', format='pdf', bbox_inches='tight')
 plt.close()
 
 
@@ -272,16 +276,23 @@ plt.close()
 # multiple line plot
 lstys = ['-', '--', '-.']
 for dataset_idx, dataset in enumerate(datasets):
+    print(dataset)
     iterations = np.arange(no_iter)
+    plt.rcParams["figure.figsize"] = (6, 4)
     for method_idx, method in enumerate(de_methods_short):
         fitness = eps[method][dataset_idx]
         plt.plot(iterations, fitness, lstys[method_idx], label=method, linewidth=3)
-    plt.legend(loc='upper right', fontsize=20)
-    plt.title(dataset, fontsize=25, fontweight='bold')
+    # plt.legend(loc='upper right', fontsize=20)
+    plt.title(short_datasets[dataset_idx], fontsize=25, fontweight='bold')
+    plt.tick_params(
+        axis='y',  # changes apply to the x-axis
+        bottom=False,  # ticks along the bottom edge are off
+        top=False,  # ticks along the top edge are off
+        labelbottom=False)  # labels along the bottom edge are off
     plt.xlabel('Iteration', fontdict={'fontsize': 20})
     plt.xticks(fontsize=20)
     plt.ylabel('Fitness', fontdict={'fontsize': 20})
-    plt.yticks(fontsize=20)
+    plt.yticks([])
     plt.tight_layout()
-    plt.savefig('Fig/vsRandom/'+dataset+'.pdf', format='pdf',  bbox_inches='tight')
+    plt.savefig(out_dir+dataset+'.pdf', format='pdf',  bbox_inches='tight')
     plt.close()

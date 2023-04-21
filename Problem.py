@@ -246,7 +246,8 @@ class FS_LSSVM(Problem):
         if len(selected_index) == 0:
             selected_index = np.array([np.random.randint(0, self.no_features)])
 
-        tmp_clf = svm.LinearSVC(random_state=1617, C=1.0, penalty='l1', dual=False)
+        # tmp_clf = svm.LinearSVC(random_state=1617, C=1.0, penalty='l1', dual=False)
+        tmp_clf = svm.LinearSVC(random_state=1617, C=0.1, penalty='l1', dual=False, max_iter=1000)
         X_train_sel = self.X[:, selected_index]
         tmp_clf.fit(X_train_sel, self.y)
         coef = tmp_clf.coef_[0]
@@ -266,7 +267,8 @@ class FS_LSSVM(Problem):
         if len(selected_index) == 0:
             selected_index = np.array([np.random.randint(0, self.no_features)])
 
-        tmp_clf = svm.LinearSVC(random_state=1617, C=1.0, penalty='l1', dual=False)
+        # tmp_clf = svm.LinearSVC(random_state=1617, C=1.0, penalty='l1', dual=False)
+        tmp_clf = svm.LinearSVC(random_state=1617, C=0.1, penalty='l1', dual=False, max_iter=1000)
         X_train_sel = self.X[:, selected_index]
         tmp_clf.fit(X_train_sel, self.y)
         coef = tmp_clf.coef_[0]

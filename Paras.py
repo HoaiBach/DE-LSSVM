@@ -1,4 +1,4 @@
-data_dir = '/home/nguyenhoai2/Grid/data/'
+data_dir = '/vol/grid-solar/sgeusers/nguyenhoai2/Dataset/'
 
 # evolutionary parameters
 max_iterations = 100

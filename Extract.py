@@ -31,7 +31,7 @@ datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
 datasets = [ 'Parkinson','German', 'WBCD', 'Sonar',
             'Musk1', 'LSVT', 'Madelon','Colon', 'DLBCL', 'ALLAML', 'CNS']
 
-datasets = ['QsarAndrogenReceptor', 'Gametes', 'QsarOralToxicity', 'Gisette']
+datasets = ['German', 'WBCD', 'Sonar', 'Musk1', 'LSVT', 'QsarAndrogenReceptor', 'ALLAML', 'Prostate', 'Ovarian']
 # datasets = ['Parkinson', 'German',  'WBCD', 'Sonar', 'Musk1', 'LSVT', 'Madelon', 'Colon', 'DLBCL', 'ALLAML', 'CNS', 'Leukemia' ]
 
 de_methods = [

@@ -99,6 +99,18 @@ if __name__ == '__main__':
     X_train, X_test = Base.normalise_data(X_train, X_test)
     no_features = X_train.shape[1]
 
+    # cs = [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+    # citers = [1000, 10000, 100000]
+    # for c in cs:
+    #     for iter in citers:
+    #         # clf = svm.LinearSVC(random_state=seed, C=c, penalty='l1', dual=False, max_iter=iter)
+    #         clf = svm.LinearSVC(random_state=seed, C=c, penalty='l2', max_iter=iter)
+    #         clf.fit(X_train, y_train)
+    #         svm_full_acc = balanced_accuracy_score(y_test, clf.predict(X_test))
+    #         print('%f-%d:%f' % (c, iter, svm_full_acc))
+    # import sys
+    # sys.exit(0)
+
     if Paras.alg_style == 'embed':
         start = time.time()
         prob = Problem.FS_LSSVM(X_train, y_train)
@@ -147,12 +159,14 @@ if __name__ == '__main__':
         to_print += 'Sel KNN: %f \n' % knn_sel_acc
 
         clf = svm.LinearSVC(random_state=seed, C=1.0, penalty='l2')
+        # clf = svm.LinearSVC(random_state=seed, C=0.001, penalty='l2')
         clf.fit(X_train, y_train)
         svm_full_acc = balanced_accuracy_score(y_test, clf.predict(X_test))
         svm_full_train_acc = balanced_accuracy_score(y_train, clf.predict(X_train))
         clf.fit(X_train_sel, y_train)
         svm_sel_acc = balanced_accuracy_score(y_test, clf.predict(X_test_sel))
         svm_sel_train_acc = balanced_accuracy_score(y_train, clf.predict(X_train_sel))
+
         to_print += 'Full train SVM: %f \n' % svm_full_train_acc
         to_print += 'Sel train SVM: %f \n' % svm_sel_train_acc
         to_print += 'Full SVM: %f \n' % svm_full_acc
